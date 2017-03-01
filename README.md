@@ -30,3 +30,19 @@
 * Поработаете с базовыми синтаксическими вещами;
 * Опыт тестирования в go;
 * Базовые вещи с Makefile;
+
+# Содержание
+
+Этот воркшоп разделен на несколько частей.
+
+* [Шаг 0](step00/README.md)
+* [Шаг 1](step01/README.md)
+* [Шаг 2](step02/README.md)
+* [Шаг 3](step03/README.md)
+* [Шаг 4](step04/README.md)
+* [Шаг 5](step05/README.md)
+* [Шаг 6](step06/README.md)
+* [Шаг 7](step07/README.md)
+* [Шаг 8](step08/README.md)
+* [Шаг 9](step09/README.md)
+* [Шаг 10](step10/README.md)
