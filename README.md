@@ -35,7 +35,7 @@
 
 Этот воркшоп разделен на несколько частей.
 
-* [Шаг 0](step00/README.md)
+* [Шаг 0. Что такое LRU, R-tree и постановка задачи](step00/README.md)
 * [Шаг 1](step01/README.md)
 * [Шаг 2](step02/README.md)
 * [Шаг 3](step03/README.md)
