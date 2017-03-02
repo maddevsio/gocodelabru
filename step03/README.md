@@ -119,7 +119,25 @@ func (l *LRU) Add(key, value interface{}) bool {
 	return evict
 }
 ```
+Ну и сразу тест на него.
+```Go
+// Test that Add returns true/false if an eviction occurred
+func TestLRU_Add(t *testing.T) {
 
+	l, err := New(1)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	if l.Add(1, 1) == true {
+		t.Errorf("should not have an eviction")
+	}
+	if l.Add(2, 2) == false {
+		t.Errorf("should have an eviction")
+	}
+}
+
+```
 ## Len
 С Len() все просто. Нам нужно вернуть только длину списка
 ```Go
@@ -128,3 +146,7 @@ func (l *LRU) Len() int {
 	return l.evictList.Len()
 }
 ```
+
+# Поздравляю
+
+Вы реализовали создание, добавление и удаление самого старого элемента из кеша и написали тест на добавление элемента. Мы продолжим работу в [следующей части](../step04/README.md)
