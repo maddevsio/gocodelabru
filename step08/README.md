@@ -113,6 +113,18 @@ func (a *DBAPI) nearestDrivers(c echo.Context) error {
 }
 
 ```
+```Go
+	Location struct {
+		Lat float64 `json:"lat"`
+		Lon float64 `json:"lon"`
+	}
+	Driver struct {
+		ID           int      `json:"id"`
+		LastLocation Location `json:"location"`
+		Expiration   int64    `json:"-"`
+		Locations    *lru.LRU `json:"-"`
+	}
 
+```
 ## Поздравления
 [следующий](../step09/README.md)
