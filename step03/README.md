@@ -15,3 +15,16 @@ type LRU struct {
   items map[interface{}]*list.Element
 }
 ```
+в `lru/lru.go` у нас теперь следующий код
+
+```Go
+package lru
+
+import "container/list"
+
+type LRU struct {
+	size      int
+	evictList *list.List
+	items     map[interface{}]*list.Element
+}
+```
