@@ -28,3 +28,37 @@ type LRU struct {
 	items     map[interface{}]*list.Element
 }
 ```
+## New
+Для того, чтобы создать кеш нам нужно передать его размер в параметрах и проинициализировать все структуры храненния.
+Получается следующее
+```Go
+// New initialized a new LRU with fixed size
+func New(size int) (*LRU, error) {
+	if size <= 0 {
+		return nil, errors.New("Size must be greater than 0")
+	}
+	c := &LRU{
+		size:      size,
+		evictList: list.New(),
+		items:     make(map[interface{}]*list.Element),
+	}
+	return c, nil
+}
+```
+
+## Add
+
+```Go
+// Add adds a value to the cache. Return true if eviction occured
+func (l *LRU) Add(key, value interface{}) bool {
+	if ent, ok := l.items[key]; ok {
+		l.evictList.MoveToFront(ent)
+		ent.Value.(*entry).value = value
+		return false
+	}
+	ent := &entry{key, value}
+	entry := l.evictList.PushFront(ent)
+	l.items[key] = entry
+}
+
+```
