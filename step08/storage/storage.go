@@ -8,7 +8,7 @@ import (
 	"github.com/dhconnelly/rtreego"
 	"github.com/pkg/errors"
 
-	"github.com/maddevsio/gocodelabru/step06/storage/lru"
+	"github.com/maddevsio/gocodelabru/step07/storage/lru"
 )
 
 type (
