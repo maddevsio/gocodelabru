@@ -16,7 +16,7 @@ func (l *LRU) Purge() {
 ```
 
 ## Get
-Get - для того, чтобы получить элемент по его ключу. Забирать его лучше из карты и возвращать, есть ли этот элемент в хранилище или нет
+Get -  чтобы получить элемент по его ключу. Забирать его лучше из карты и возвращать, есть ли этот элемент в хранилище или нет
 ```Go
 // Get looks up a key's value from the cache
 func (l *LRU) Get(key interface{}) (value interface{}, ok bool) {
@@ -29,6 +29,7 @@ func (l *LRU) Get(key interface{}) (value interface{}, ok bool) {
 ```
 
 ## Contains
+Для того, чтобы знать, есть ли у нас элемент в кеше или нет
 
 ```Go
 // Contains check if key is in cache without updating
@@ -38,7 +39,7 @@ func (l *LRU) Contains(key interface{}) (ok bool) {
 	return ok
 }
 ```
-И тест на это
+Тест, чтобы знать, что метод работает.
 ```Go
 
 // Test that Contains doesn't update recent-ness
@@ -61,7 +62,7 @@ func TestLRU_Contains(t *testing.T) {
 }
 ```
 ## Remove
-
+Задача этого метода - полностью удалить элемент по ключу, если он существует в нашем кеше. При этом нам нужно знать, удалился элемент или нет.
 ```Go
 // Remove removes prodided key from the cache, returning if the
 // key was contained
@@ -75,6 +76,8 @@ func (l *LRU) Remove(key interface{}) bool {
 ```
 
 ## GetOldest и RemoveOldest
+
+Эти методы могут пригодится для того, чтобы извне получать и/или удалять самые "старые" значения в кеше
 ```Go
 // RemoveOldest removes oldest item from cache
 func (l *LRU) RemoveOldest() (interface{}, interface{}, bool) {
@@ -98,7 +101,7 @@ func (l *LRU) GetOldest() (interface{}, interface{}, bool) {
 }
 ```
 
-А протестировать?
+Плюс к этому тест
 ```Go
 func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
 	l, err := New(128)
@@ -136,6 +139,7 @@ func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
 
 ## Keys
 
+Этот метод нужен для того, чтобы получить все ключи в нашем кеше. Чтобы потом, например, получить по ним значение из кеша.
 ```Go
 // Keys returns a slice of the keys in the cache
 func (l *LRU) Keys() []interface{} {
@@ -148,7 +152,9 @@ func (l *LRU) Keys() []interface{} {
 	return keys
 }
 ```
-## Самый главный тест для проверки всего кеша
+
+## На этом все. 
+Мы закончили с построением кеша. Напишем тест, чтобы прогнать все возможные сценарии и удостоверится, что код работает.
 
 ```Go
 func TestLRU(t *testing.T) {
@@ -201,4 +207,4 @@ func TestLRU(t *testing.T) {
 ```
 
 ## Поздравляю!
-Вы теперь реализовали минимально работающий LRU кеш. Правда он не совсем консистентный и данные в нем могут дублироваться. В [следующей](../step05/README.md) части мы сделаем консистентность и построим наше хранилище
+Вы реализовали LRU кеш и вы уверены, что он работает. Но в нем есть проблема с тем, что он не консистентный. Данные могут в нем дублироваться. В [следующей](../step05/README.md) части мы сделаем консистентность и распланируем наше хранилище
