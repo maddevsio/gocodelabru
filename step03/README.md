@@ -15,19 +15,38 @@ type LRU struct {
   items map[interface{}]*list.Element
 }
 ```
-в `lru/lru.go` у нас теперь следующий код
+Также, нам нужна структура, в которой мы будем хранить ключ и значение и хранить структуру будем в нашем списке.
+```Go
+// entry used to store value in evictList
+type entry struct {
+	key   interface{}
+	value interface{}
+}
+```
 
+в файле `lru/lru.go` следующий код
 ```Go
 package lru
 
-import "container/list"
+import (
+	"container/list"
+)
 
-type LRU struct {
-	size      int
-	evictList *list.List
-	items     map[interface{}]*list.Element
-}
+type (
+	LRU struct {
+		size      int
+		evictList *list.List
+		items     map[interface{}]*list.Element
+	}
+	// entry used to store value in evictList
+	entry struct {
+		key   interface{}
+		value interface{}
+	}
+)
+
 ```
+
 ## New
 Для того, чтобы создать кеш нам нужно передать его размер в параметрах и проинициализировать все структуры храненния.
 Получается следующее
@@ -61,4 +80,42 @@ func (l *LRU) Add(key, value interface{}) bool {
 	l.items[key] = entry
 }
 
+```
+Тут у нас Add делает по сути две вещи. Добавляет и удаляет значение по ключу. При этом с помощью API `container/list` он управляет положением элемента в списке. Не хватает лишь удаления элемента, если у нас элементов в нашем кеше больше.
+
+## Удаление наименее используемого элемента
+```Go
+func (l *LRU) removeOldest() {
+	ent := l.evictList.Back()
+	if ent != nil {
+		l.removeElement(ent)
+	}
+}
+func (l *LRU) removeElement(e *list.Element) {
+	l.evictList.Remove(e)
+	kv := e.Value.(*entry)
+	delete(l.items, kv.key)
+}
+```
+По закладываемой логике, нам нужно удалить всего-лишь последний элемент из списка. Удалять нужно будет его и из нашего списка и из карты.
+
+Вернемся к добавлению элемента и внедрим удаление самого старого элемента, если мы превышаем размер хранилища. Получится следующий код
+
+```Go
+// Add adds a value to the cache. Return true if eviction occured
+func (l *LRU) Add(key, value interface{}) bool {
+	if ent, ok := l.items[key]; ok {
+		l.evictList.MoveToFront(ent)
+		ent.Value.(*entry).value = value
+		return false
+	}
+	ent := &entry{key, value}
+	entry := l.evictList.PushFront(ent)
+	l.items[key] = entry
+	evict := l.evictList.Len() > l.size
+	if evict {
+		l.removeOldest()
+	}
+	return evict
+}
 ```
