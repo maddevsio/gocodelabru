@@ -36,6 +36,7 @@ type DriverStorage struct {
   mu *sync.RWMutex
   drivers map[int]*Driver
   locations *rtreego.Rtree
+  lruSize int
 }
 ```
 
