@@ -3,7 +3,7 @@
 Начнем с того, чтобы построить пространственный индекс, нам нужно знать границы точки. Это можно сделать, если мы сможем построить minimum bounding rectangle.
 R-tree принимает в нашем случае Spatial объект, который должен имплементировать метод `Bounds()` который как раз таки и должен возвращать прямоугольник.
 
-Мы в наше хранилище будем класть `Driver` Поэтому имплементируем ему метод `Bounds()`
+Мы в наше хранилище будем класть экземпляры `Driver` Поэтому имплементируем ему метод `Bounds()`
 
 ## Bounds()
 ```Go
@@ -16,7 +16,7 @@ func (d *Driver) Bounds() *rtreego.Rect {
 Еще нам нужно сделать Expire механизм. Модифицируем структуру `Driver` и добавим туда `Expiration`
 
 ```Go
-type	Driver struct {
+type Driver struct {
 		ID           int
 		LastLocation Location
 		Expiration   int64
@@ -48,7 +48,11 @@ func New(lruSize int) *DriverStorage {
 }
 ```
 
+
 ## Set
+Этот метод у нас работает таким же образом. Мы и добавляем и обновляем данные.
+Метод этот возвращает ошибку, потому что в R-tree нет метода Update. Зато есть `Delete()` и `Insert()`.
+Поэтому перед тем как добавить элемент в БД, мы попробуем узнать есть ли он или нет. Если его нет, то мы проинициализируем LRU кеш ну и обновим все данные в итоге. Ошибку вернем только в случае, если мы не смогли удалить данные из нашего индекса.
 ```Go
 // Set an Driver to the storage, replacing any existing item.
 func (s *DriverStorage) Set(driver *Driver) error {
@@ -80,6 +84,7 @@ func (s *DriverStorage) Set(driver *Driver) error {
 }
 ```
 ## Delete
+Метод нужен для удаления данных. Метод вернет ошибку, если мы пытаемся удалить данные, которых нет в БД
 ```Go
 // Delete deletes a driver from storage. Does nothing if the driver is not in the storage
 func (s *DriverStorage) Delete(id int) error {
@@ -99,6 +104,7 @@ func (s *DriverStorage) Delete(id int) error {
 ```
 
 ## Get
+Для получения водителя по ключу. Вернет ошибку, если данных по ключу не существует.
 ```Go
 // Get returns driver by key
 func (s *DriverStorage) Get(id int) (*Driver, error) {
@@ -111,7 +117,8 @@ func (s *DriverStorage) Get(id int) (*Driver, error) {
 	return d, nil
 }
 ```
-Протестируем методы выше
+
+Протестируем все методы выше
 
 ```Go
 func TestDriverStorage(t *testing.T) {
@@ -135,6 +142,8 @@ func TestDriverStorage(t *testing.T) {
 }
 ```
 ## Nearest
+В основу реализации ближайших водителей легли следующие мысли. 
+Мы хотим возвращать ближайших водителей и привязываться к радиусу в этом моменте было бы бесполезно по следующим соображениям. Ближайший водитель может быть как за 100 метров, так и за пять километров. Поэтому для того, чтобы решить эту задачу более эффективно, нам всегда нужно получать N ближайших водителей.
 ```Go
 // Nearest returns nearest drivers
 func (s *DriverStorage) Nearest(point rtreego.Point, count int) []*Driver {
@@ -153,7 +162,7 @@ func (s *DriverStorage) Nearest(point rtreego.Point, count int) []*Driver {
 
 }
 ```
-И тест на него, который покажет, что метод работает полностью. Потому что он вернет действительно ближайших водителей и равно столько, сколько нужно
+И тест на него, который покажет, что метод работает полностью. Потому что он вернет действительно ближайших водителей и равно столько, сколько нужно. Точки взяты где-то в центре, рядом с Бишкекпарком.
 ```Go
 func TestNearest(t *testing.T) {
 	s := New(10)
@@ -207,6 +216,7 @@ func TestNearest(t *testing.T) {
 ```
 
 ## DeleteExpired
+Так как мы решили сделать еще Expire механизм, то нам нужно удалять водителей, которые протухли. Реализация простая, мы просто проходим по всем элементам.
 ```Go
 // DeleteExpired removes all expired items from storage
 func (s *DriverStorage) DeleteExpired() {
@@ -224,7 +234,7 @@ func (s *DriverStorage) DeleteExpired() {
 	}
 }
 ```
-Тест
+Протестируем его.
 ```Go
 func TestExpire(t *testing.T) {
 	s := New(10)
@@ -246,4 +256,4 @@ func TestExpire(t *testing.T) {
 ```
 
 ## Поздравляю!
-Вы реализовали полноценное хранилище для геоданных со всеми нужными методами. В [следующей](../step07/README.md) части мы будем делать HTTP API к нему.
+На текущий момент вы сделали структуру данных, которая решает задачу хранения. В [следующей](../step07/README.md) части мы будем делать HTTP API к нему.
