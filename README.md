@@ -46,3 +46,34 @@
 * [Шаг 8. Делаем HTTP API](step08/README.md)
 * [Шаг 9. Пару штук о автоматизации и Makefile](step09/README.md)
 * [Шаг 10. Поздравления!](step10/README.md)
+
+## Комьюнити и ресурсы
+
+Есть несколько мест, где вы можете найти информацию про Go:
+
+- [golang.org](https://golang.org)
+- [godoc.org](https://godoc.org) тут вы можете найти документацию по любому пакету
+- [Блог языка Go](https://blog.golang.org)
+
+Одно из самых замечательных качеств языка Go - это его сообщество. 
+### Сообщества и каналы в телеграм
+
+1. [@bishkekgophers](https://telegram.me/bishkekgophers) - Гоферы Бишкека
+2. [@devkg](https://telegram.me/devkg] - Программисты Кыргызстана
+3. [@maddevsio](https://telegram.me/maddevsio) - канал нашей компании, где мы делимся всякими интересными штуками. Очень часто говорим про Go
+
+### Сообщества в Slack
+
+1. [golang-ru.slack.com](golang-ru.slack.com) - Рускоязычное сообщество гоферов
+2. [gophers.slack.com](gophers.slack.com) - Англоязычное сообщество гоферов
+
+
+### Подкасты
+
+1. [GolangShow](https://golangshow.com) - Русскоязычный подкаст о языке Go
+2. [Gotime](http://gotime.fm) - Англоязычный подкаст о языке Go
+
+### Остальное
+- [Go Форум](https://forum.golangbridge.org/)
+- [@golang](https://twitter.com/golang) and [#golang](https://twitter.com/search?q=%23golang) on Twitter.
+- [Go+ community](https://plus.google.com/u/1/communities/114112804251407510571) on Google Plus.
