@@ -34,7 +34,7 @@ type (
 ```Go
 type DriverStorage struct {
   mu *sync.RWMutex
-  drivers map[int]Driver
+  drivers map[int]*Driver
   locations *rtreego.Rtree
 }
 ```
