@@ -77,3 +77,9 @@
 - [Go Форум](https://forum.golangbridge.org/)
 - [@golang](https://twitter.com/golang) and [#golang](https://twitter.com/search?q=%23golang) on Twitter.
 - [Go+ community](https://plus.google.com/u/1/communities/114112804251407510571) on Google Plus.
+
+### Благодарности
+
+1. Francesc Campoy за его воркшоп [Building Web Applications with Go](https://github.com/campoy/go-web-workshop/)
+2. Ashley McNamara за картинку в 10м шаге. Вы можете посмотреть и другие работы в [репо](https://github.com/ashleymcnamara/gophers)
+3. [Елене Граховац](https://twitter.com/webdeva) за фидбек
