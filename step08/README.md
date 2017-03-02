@@ -1,6 +1,6 @@
 # Шаг 8. Делаем HTTP API
 
-##AddDreiver
+## addDriver
 ```Go
 func (a *DBAPI) addDriver(c echo.Context) error {
 	p := &Payload{}
@@ -30,7 +30,7 @@ func (a *DBAPI) addDriver(c echo.Context) error {
 
 ```
 
-## GE
+## getDriver
 ```Go
 func (a *DBAPI) getDriver(c echo.Context) error {
 	driverID := c.Param("id")
@@ -56,7 +56,7 @@ func (a *DBAPI) getDriver(c echo.Context) error {
 }
 ```
 
-## DELETE
+## deleteDriver
 ```func (a *DBAPI) deleteDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
@@ -79,7 +79,7 @@ func (a *DBAPI) getDriver(c echo.Context) error {
 }
 ```
 
-## Nearest
+## NearestDrivers
 ```Go
 func (a *DBAPI) nearestDrivers(c echo.Context) error {
 	lat := c.Param("lat")
@@ -113,6 +113,7 @@ func (a *DBAPI) nearestDrivers(c echo.Context) error {
 }
 
 ```
+Ну, правда на этом этапе. чтобы не плодить не нужные структуры, поменяем в `storage/storage.go` файлы, добавив `json` теги
 ```Go
 	Location struct {
 		Lat float64 `json:"lat"`
@@ -126,5 +127,5 @@ func (a *DBAPI) nearestDrivers(c echo.Context) error {
 	}
 
 ```
-## Поздравления
-[следующий](../step09/README.md)
+## Поздравляю!
+Вы сделали апи. Правда оно не работает и пока-что без тестов. В [следующем](../step09/README.md) шаге мы закончим нашу программу, добавив запуск.
