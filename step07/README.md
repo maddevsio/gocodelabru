@@ -49,18 +49,7 @@ func New(bindAddr string, lruSize int) *DBAPI {
 }
 ```
 
-## Start 
-Для запуска
 
-```Go
-func (a *DBAPI) Start() {
-	a.waitGroup.Add(1)
-	go func() {
-		a.echo.Start(a.bindAddr)
-		a.waitGroup.Done()
-	}()
-}
-```
 ## WaitStop
 ```Go
 func (a *DBAPI) WaitStop() {
@@ -74,4 +63,20 @@ func (a *DBAPI) removeExpired() {
 		a.database.DeleteExpired()
 	}
 }
+```
+
+## Start 
+Для запуска
+
+```Go
+func (a *DBAPI) Start() {
+	a.waitGroup.Add(1)
+	go func() {
+		a.echo.Start(a.bindAddr)
+		a.waitGroup.Done()
+	}()
+	a.waitGroup.Add(1)
+	go a.removeExpired()
+}
+
 ```
