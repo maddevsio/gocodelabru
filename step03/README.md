@@ -119,3 +119,12 @@ func (l *LRU) Add(key, value interface{}) bool {
 	return evict
 }
 ```
+
+## Len
+С Len() все просто. Нам нужно вернуть только длину списка
+```Go
+// Len returns the number of items in cache
+func (l *LRU) Len() int {
+	return l.evictList.Len()
+}
+```
