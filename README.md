@@ -59,7 +59,7 @@
 ### Сообщества и каналы в телеграм
 
 1. [@bishkekgophers](https://telegram.me/bishkekgophers) - Гоферы Бишкека
-2. [@devkg](https://telegram.me/devkg] - Программисты Кыргызстана
+2. [@devkg](https://telegram.me/devkg) - Программисты Кыргызстана
 3. [@maddevsio](https://telegram.me/maddevsio) - канал нашей компании, где мы делимся всякими интересными штуками. Очень часто говорим про Go
 
 ### Сообщества в Slack
