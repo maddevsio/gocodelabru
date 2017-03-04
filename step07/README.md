@@ -57,7 +57,7 @@ func New(bindAddr string, lruSize int) *DBAPI {
 В качестве обертки над приватной вейтгруппой
 ```Go
 func (a *DBAPI) WaitStop() {
-	a.waitGroup.WaitStop()
+	a.waitGroup.Wait()
 }
 ```
 
