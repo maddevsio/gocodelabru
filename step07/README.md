@@ -17,6 +17,7 @@ type DBAPI struct {
 	database  *storage.DriverStorage
 	waitGroup sync.WaitGroup
 	echo      *echo.Echo
+	bindAddr  string
 }
 ```
 
