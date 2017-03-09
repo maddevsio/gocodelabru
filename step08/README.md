@@ -57,7 +57,8 @@ func (a *DBAPI) getDriver(c echo.Context) error {
 ```
 
 ## deleteDriver
-```func (a *DBAPI) deleteDriver(c echo.Context) error {
+```Go
+func (a *DBAPI) deleteDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
 	if err != nil {
