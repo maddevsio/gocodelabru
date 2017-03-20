@@ -35,17 +35,21 @@
 
 Этот воркшоп разделен на несколько частей.
 
-* [Шаг 0. Что такое LRU, R-tree и постановка задачи](step00/README.md)
-* [Шаг 1. Бутстрапим проект](step01/README.md)
-* [Шаг 2. Что нужно знать о тестировании и написании тестов в Go.](step02/README.md)
-* [Шаг 3. Имплементируем LRU (часть 1)](step03/README.md)
-* [Шаг 4. Имплементируем LRU (часть 2)](step04/README.md)
-* [Шаг 5. Строим сторадж](step05/README.md)
-* [Шаг 6. Имплементируем сторадж](step06/README.md)
-* [Шаг 7. Проектируем HTTP API](step07/README.md)
-* [Шаг 8. Делаем HTTP API](step08/README.md)
-* [Шаг 9. Пару штук о автоматизации и Makefile](step09/README.md)
-* [Шаг 10. Поздравления!](step10/README.md)
+* [Шаг 0. Постановка задачи](step00/README.md)
+* [Шаг 1. Что нужно знать о тестировании и написании тестов в Go.](step01/README.md)
+* [Шаг 2. Hello world](step02/README.md)
+* [Шаг 3. Проектируем HTTP API](step03/README.md)
+* [Шаг 4. Делаем HTTP API](step04/README.md)
+* [Шаг 5. Добавляем хранилище для данных и ищем ближайших водителей наивным путем](step05/README.md)
+* [Шаг 6. Автоматизируем рутину с помощью Makefile](step06/README.md)
+* [Шаг 7. Пишем первый бенчмарк и зачем он](step07/README.md)
+* [Шаг 8. Что такое R-tree и почему оно эффективнее наивной реализации](step08/README.md)
+* [Шаг 9. Делаем архитектуру для БД](step09/README.md)
+* [Шаг 10. Имплементируем сторадж](step10/README.md)
+* [Шаг 11. Имплементируем LRU (часть 1)](step11/README.md)
+* [Шаг 12. Имплементируем LRU (часть 2)](step12/README.md)
+* [Шаг 13. Собираем все вместе.](step13/README.md)
+* [Шаг 14. Поздравления!](step14/README.md)
 
 ## Комьюнити и ресурсы
 
@@ -65,7 +69,7 @@
 ### Сообщества в Slack
 
 1. [golang-ru.slack.com](golang-ru.slack.com) - Рускоязычное сообщество гоферов
-2. [gophers.slack.com](gophers.slack.com) - Англоязычное сообщество гоферов
+2. [gophers.slack.com](gophers.slack.com) - Англоязычное сообщество гоферов. Инвайт получить тут [https://invite.slack.golangbridge.org/](https://invite.slack.golangbridge.org/)
 
 
 ### Подкасты
