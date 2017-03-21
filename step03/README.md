@@ -83,16 +83,16 @@ type (
 	DriverResponse struct {
 		Success bool            `json:"success"`
 		Message string          `json:"message"`
-		Driver  *storage.Driver `json:"driver"`
+		Driver  int `json:"driver"`
 	}
 	// Для возврата ближайших водителей
 	NearestDriverResponse struct {
 		Success bool              `json:"success"`
 		Message string            `json:"message"`
-		Drivers []*storage.Driver `json:"drivers"`
+		Drivers []int `json:"drivers"`
 	}
 )
 ```
 
 ## Поздравляю!
-У нас есть основные структуры для получения/отправления данных и методы "заглушки". В [следующей](../step04/README.md) части мы реализуем работающие методы и напишем тесты на них.
+У нас есть основные структуры для получения/отправления данных и методы "заглушки". В [следующей](../step04/README.md) части мы реализуем их напишем тесты.
