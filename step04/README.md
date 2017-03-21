@@ -2,7 +2,7 @@
 
 ## addDriver
 ```Go
-func (a *DBAPI) addDriver(c echo.Context) error {
+func addDriver(c echo.Context) error {
 	p := &Payload{}
 	if err := c.Bind(p); err != nil {
 		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
@@ -15,12 +15,11 @@ func (a *DBAPI) addDriver(c echo.Context) error {
 		Message: "Added",
 	})
 }
-
 ```
 
 ## getDriver
 ```Go
-func (a *DBAPI) getDriver(c echo.Context) error {
+func getDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
 	if err != nil {
@@ -35,13 +34,14 @@ func (a *DBAPI) getDriver(c echo.Context) error {
 		Driver:  id,
 	})
 }
+
 ```
 
 ## deleteDriver
 ```Go
-func (a *DBAPI) deleteDriver(c echo.Context) error {
+func deleteDriver(c echo.Context) error {
 	driverID := c.Param("id")
-	id, err := strconv.Atoi(driverID)
+	_, err := strconv.Atoi(driverID)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &DefaultResponse{
 			Success: false,
@@ -57,7 +57,7 @@ func (a *DBAPI) deleteDriver(c echo.Context) error {
 
 ## NearestDrivers
 ```Go
-func (a *DBAPI) nearestDrivers(c echo.Context) error {
+func nearestDrivers(c echo.Context) error {
 	lat := c.Param("lat")
 	lon := c.Param("lon")
 	if lat == "" || lon == "" {
@@ -66,14 +66,14 @@ func (a *DBAPI) nearestDrivers(c echo.Context) error {
 			Message: "empty coordinates",
 		})
 	}
-	lt, err := strconv.ParseFloat(lat, 64)
+	_, err := strconv.ParseFloat(lat, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &DefaultResponse{
 			Success: false,
 			Message: "failed convert float",
 		})
 	}
-	ln, err := strconv.ParseFloat(lon, 64)
+	_, err = strconv.ParseFloat(lon, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &DefaultResponse{
 			Success: false,
