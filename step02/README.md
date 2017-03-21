@@ -1,74 +1,17 @@
-# Шаг 2. Что нужно знать о тестировании и написании тестов в Go.
+# Шаг 2. Hello world
 
-Тестирование нужно для слабаков, которые не могут написать с первой попытки работающий код. :trollface:
-Поэтому в мире существует много инстументов для того, чтобы писать тесты. Go не исключение. В Go есть пакет `testing` функционала которого хватит всем.
-
-В Go тестовые файлы обычно лежат в той же самой папке, что и обычные файлы. Их можно узнать по присутсвию `_test.go`  в имени файла.
-
-Например посмотрим, как тестируют пакет `math` Go.
+Давайте напишем что-нибудь работающее. Например простое Hello world приложение.
 
 ```Go
-package math
+package main
 
-import "testing"
+import "fmt"
 
-func TestAverage(t *testing.T) {
-  var v float64
-  v = Average([]float64{1,2})
-  if v != 1.5 {
-    t.Error("Expected 1.5, got ", v)
-  }
+func main() {
+  fmt.Println("Hello world")
 }
 ```
 
-Запуск тестов происходит командой `go test`
-
-```
-$ go test
-PASS
-ok      golang-book/chapter11/math      0.032s
-```
-
-А еще Go сообщество пропогандирует вместо копипаста в тестах использовать так называемые table tests. В этом случае у нас есть пары исходного значения и результата. А тесты прогоняем в цикле
-
-```Go
-package math
-
-import "testing"
-
-type testpair struct {
-  values []float64
-  average float64
-}
-
-var tests = []testpair{
-  { []float64{1,2}, 1.5 },
-  { []float64{1,1,1,1,1,1}, 1 },
-  { []float64{-1,1}, 0 },
-}
-
-func TestAverage(t *testing.T) {
-  for _, pair := range tests {
-    v := Average(pair.values)
-    if v != pair.average {
-      t.Error(
-        "For", pair.values,
-        "expected", pair.average,
-        "got", v,
-      )
-    }
-  }
-}
-```
-[Документация](http://godoc.org/testing) к пакету `testing`
-
-А если вы запаритесь писать постоянно 
-```Go
-if smth != anoher {
-   t.Error("Error")
-}
-```
-То есть пакет [testify/assert](https://godoc.org/github.com/stretchr/testify/assert)
 
 
 ## Поздравляю!
