@@ -103,7 +103,7 @@ func nearestDrivers(c echo.Context) error {
 			Success: false,
 			Message: "empty coordinates",
 		})
-	}Плбс 
+	} 
 	_, err := strconv.ParseFloat(lat, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, &DefaultResponse{
@@ -233,6 +233,41 @@ func (a *API) nearestDrivers(c echo.Context) error {
 		Message: "found",
 	})
 }
+```
+
+А все наши модели перенесем в `api/models.go`
+```Go
+package api
+
+type (
+	Location struct {
+		Latitude  float64 `json:"lat"`
+		Longitude float64 `json:"lon"`
+	}
+	Payload struct {
+		Timestamp int64    `json:"timestamp"`
+		DriverID  int      `json:"driver_id"`
+		Location  Location `json:"location"`
+	}
+	// Структура для возврата ответа по умолчанию
+	DefaultResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// Для возврата ответа, когда мы запрашиваем водителя
+	DriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Driver  int    `json:"driver"`
+	}
+	// Для возврата ближайших водителей
+	NearestDriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Drivers []int  `json:"drivers"`
+	}
+)
+
 ```
 ## Поздравляю! 
 Мы сделали архитектуру для нашего хранилища. Разобрались как сделать консистентность данных. Реализовывать его будем в [следующем](../step06/README.md) уроке
