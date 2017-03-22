@@ -142,7 +142,7 @@ type API struct {
 func New(bindAddr string) *API {
 	a := &API{}
 	a.echo = echo.New()
-  a.bindAddr = bindAddr
+  	a.bindAddr = bindAddr
 	g := a.echo.Group("/api")
 	g.POST("/driver/", a.addDriver)
 	g.GET("/driver/:id", a.getDriver)
@@ -155,6 +155,9 @@ func New(bindAddr string) *API {
 ## Start
 Этот метод нужен будет для того, чтобы стартовать наше приложение
 ```Go
+func (a *API) Start() error {
+	return a.echo.Start(a.bindAddr)
+}
 ```
 
 ## Остальные методы
@@ -269,5 +272,26 @@ type (
 )
 
 ```
+
+в main.go у нас остался только этот код
+```Go
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
+}
+```
+Который нужно модифицировать примерно в это
+``` 
+func main() {
+	a := api.New(":9111")
+	log.Fatal(a.Start())
+}
+```
+
 ## Поздравляю! 
-Мы сделали архитектуру для нашего хранилища. Разобрались как сделать консистентность данных. Реализовывать его будем в [следующем](../step06/README.md) уроке
+Мы раздробили нашу програму на несколько частей. В [следующей](../step06/README.md) части мы поработаем с флагами, конфигурацией приложения и Makefile
