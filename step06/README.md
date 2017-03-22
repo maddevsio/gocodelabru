@@ -2,6 +2,8 @@
 Пришла пора для того, чтобы конфигурировать наше приложение
 Для конфигурации мы воспользуемся пакетом [flag](https://godoc.org/flag)
 ```Go
+import "flag"
+
 func main() {
 	bindAddr := flag.String("bind_addr", ":8080", "Set bind address")
 	flag.Parse()
