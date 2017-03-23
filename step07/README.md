@@ -86,5 +86,43 @@ func (d *DriverStorage) Nearest(lat, lon float64) ([]*Driver, error) {
 }
 ```
 
+Реализуем каждый из методов
+
+## Set
+
+```Go
+// Set sets driver to storage by key
+func (d *DriverStorage) Set(key int, driver *Driver) {
+	d.drivers[key] = driver
+}
+```
+
+## Delete
+
+```Go
+// Delete removes driver from storage by key
+func (d *DriverStorage) Delete(key int) error {
+	driver, ok := d.drivers[key]
+	if !ok {
+		return errors.New("Driver does not exist")
+	}
+	delete(d.drivers, key)
+	return nil
+}
+```
+
+## Get
+
+```Go
+// Get gets driver from storage and an error if nothing found
+func (d *DriverStorage) Get(key int) (*Driver, error) {
+	driver, ok := d.drivers[key]
+	if !ok {
+		return nil, errors.New("Driver does not exist")
+	}
+	return driver, nil
+}
+```
+
 ## Поздравляю! 
 Мы сделали архитектуру для нашего хранилища. Разобрались как сделать консистентность данных. Реализовывать его будем в [следующем](../step06/README.md) уроке
