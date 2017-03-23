@@ -1,132 +1,49 @@
 # Шаг 8. Делаем HTTP API
 
-## addDriver
+Как вы можете догадаться, метод, который вы реализовали не совсем эффективный.
+А для того, чтобы убедиться в этом, напишем бенчмарк в `storage/storage_test.go`
 ```Go
-func (a *DBAPI) addDriver(c echo.Context) error {
-	p := &Payload{}
-	if err := c.Bind(p); err != nil {
-		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
-			Success: false,
-			Message: "Set content-type application/json or check your payload data",
+func BenchmarkNearest(b *testing.B) {
+	s := New()
+	for i := 0; i < 100; i++ {
+		s.Set(i, &Driver{
+			ID: i,
+			LastLocation: Location{
+				Lat: float64(i),
+				Lon: float64(i),
+			},
 		})
 	}
-	driver := &storage.Driver{}
-	driver.ID = p.DriverID
-	driver.LastLocation = storage.Location{
-		Lat: p.Location.Latitude,
-		Lon: p.Location.Longitude,
+	for i := 0; i < b.N; i++ {
+		s.Nearest(1000, 123, 123)
 	}
-	if err := a.database.Set(driver); err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-	}
-	return c.JSON(http.StatusOK, &DefaultResponse{
-		Success: false,
-		Message: "Added",
-	})
-}
-
-```
-
-## getDriver
-```Go
-func (a *DBAPI) getDriver(c echo.Context) error {
-	driverID := c.Param("id")
-	id, err := strconv.Atoi(driverID)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: "could not convert string to integer",
-		})
-	}
-	d, err := a.database.Get(id)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-	}
-	return c.JSON(http.StatusOK, &DriverResponse{
-		Success: true,
-		Message: "found",
-		Driver:  d,
-	})
 }
 ```
-
-## deleteDriver
+И проверим работу на 100, 1000, 10000 элементах в хранилище.
 ```Go
-func (a *DBAPI) deleteDriver(c echo.Context) error {
-	driverID := c.Param("id")
-	id, err := strconv.Atoi(driverID)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: "could not convert string to integer",
-		})
-	}
-	if err := a.database.Delete(id); err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-	}
-	return c.JSON(http.StatusOK, &DefaultResponse{
-		Success: true,
-		Message: "removed",
-	})
-}
+cd storage
+go test -bench=.
+```
+Для 100 элементов
+```
+BenchmarkNearest-4         50000             24002 ns/op
+PASS
+ok      github.com/maddevsio/gocodelabru/step09/storage 1.460s
+```
+Для 1000 элементов
+```Go
+BenchmarkNearest-4          5000            272552 ns/op
+PASS
+ok      github.com/maddevsio/gocodelabru/step09/storage 1.402s
+```
+Для 10000 элементов
+```Go
+BenchmarkNearest-4           500           2799431 ns/op
+PASS
+ok      github.com/maddevsio/gocodelabru/step09/storage 1.714s
 ```
 
-## NearestDrivers
-```Go
-func (a *DBAPI) nearestDrivers(c echo.Context) error {
-	lat := c.Param("lat")
-	lon := c.Param("lon")
-	if lat == "" || lon == "" {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: "empty coordinates",
-		})
-	}
-	lt, err := strconv.ParseFloat(lat, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: "failed convert float",
-		})
-	}
-	ln, err := strconv.ParseFloat(lon, 64)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, &DefaultResponse{
-			Success: false,
-			Message: "failed convert float",
-		})
-	}
-	drivers := a.database.Nearest(rtreego.Point{lt, ln}, 10)
-	return c.JSON(http.StatusOK, &NearestDriverResponse{
-		Success: false,
-		Message: "found",
-		Drivers: drivers,
-	})
-}
+Можно сделать вывод, что чем больше элеменов в хранилище, тем дольше мы ищем ближайших водителей.
 
-```
-Ну, правда на этом этапе. чтобы не плодить не нужные структуры, поменяем в `storage/storage.go` файлы, добавив `json` теги
-```Go
-	Location struct {
-		Lat float64 `json:"lat"`
-		Lon float64 `json:"lon"`
-	}
-	Driver struct {
-		ID           int      `json:"id"`
-		LastLocation Location `json:"location"`
-		Expiration   int64    `json:"-"`
-		Locations    *lru.LRU `json:"-"`
-	}
-
-```
 ## Поздравляю!
-Вы сделали апи. Правда оно не работает и пока-что без тестов. В [следующем](../step09/README.md) шаге мы закончим нашу программу, добавив запуск.
+Вы теперь знаете как писать бенчмарки В [следующем](../step09/README.md) шаге мы будем оптимизировать работу метода выдачи ближайших водителей
