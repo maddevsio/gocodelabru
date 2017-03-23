@@ -1,49 +1,132 @@
-# Шаг 10. Собираем все вместе и немного о Makefile
-Пришла пора для того, чтобы доделать наше приложение и запустить его.
-Для конфигурации мы воспользуемся пакетом [flag](https://godoc.org/flag)
-Ну и нам нужно будет только создать апи, и запустить его.
-ПОлучается следующий код
+# Шаг 8. Делаем HTTP API
+
+## addDriver
 ```Go
-func main() {
-	bindAddr := flag.String("bind_addr", ":8080", "Set bind address")
-	size := flag.Int("lru_size", 20, "Set lru size per driver")
-	flag.Parse()
-	a := api.New(*bindAddr, *size)
-	a.Start()
-	a.WaitStop()
+func (a *DBAPI) addDriver(c echo.Context) error {
+	p := &Payload{}
+	if err := c.Bind(p); err != nil {
+		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
+			Success: false,
+			Message: "Set content-type application/json or check your payload data",
+		})
+	}
+	driver := &storage.Driver{}
+	driver.ID = p.DriverID
+	driver.LastLocation = storage.Location{
+		Lat: p.Location.Latitude,
+		Lon: p.Location.Longitude,
+	}
+	if err := a.database.Set(driver); err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: false,
+		Message: "Added",
+	})
 }
 
 ```
-В GO есть несколько правил хорошего тона:
 
-1. В твоем пакете должны быть тесты
-2. Твои библиотеки не должны писать логи
-3. Сообщения об ошибках написаны в lowercase
-4. Твой код должен быть отформатирован
-
-Для того, чтобы код всегда был отформатирован, помимо триггеров на сохранение, можно запустить команду `go fmt ./...` и он отформатирует все файлы.
-Для примера поделюсь с вами простым `Makefile` 
-```make
-TARGET=codelab
-
-all: fmt clean build
-
-clean:
-	rm -rf $(TARGET)
-
-depends:
-	go get -u -v
-
-build:
-	go build -v -o $(TARGET) main.go
-
-fmt:
-	go fmt ./...
-
-test:
-	go test -v ./...
+## getDriver
+```Go
+func (a *DBAPI) getDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	id, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	d, err := a.database.Get(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, &DriverResponse{
+		Success: true,
+		Message: "found",
+		Driver:  d,
+	})
+}
 ```
-Выполнив make вы отформатируете весь код и пересоберете проект
 
+## deleteDriver
+```Go
+func (a *DBAPI) deleteDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	id, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	if err := a.database.Delete(id); err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: true,
+		Message: "removed",
+	})
+}
+```
+
+## NearestDrivers
+```Go
+func (a *DBAPI) nearestDrivers(c echo.Context) error {
+	lat := c.Param("lat")
+	lon := c.Param("lon")
+	if lat == "" || lon == "" {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "empty coordinates",
+		})
+	}
+	lt, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	ln, err := strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	drivers := a.database.Nearest(rtreego.Point{lt, ln}, 10)
+	return c.JSON(http.StatusOK, &NearestDriverResponse{
+		Success: false,
+		Message: "found",
+		Drivers: drivers,
+	})
+}
+
+```
+Ну, правда на этом этапе. чтобы не плодить не нужные структуры, поменяем в `storage/storage.go` файлы, добавив `json` теги
+```Go
+	Location struct {
+		Lat float64 `json:"lat"`
+		Lon float64 `json:"lon"`
+	}
+	Driver struct {
+		ID           int      `json:"id"`
+		LastLocation Location `json:"location"`
+		Expiration   int64    `json:"-"`
+		Locations    *lru.LRU `json:"-"`
+	}
+
+```
 ## Поздравляю!
-Вы можете собрать проект, запустив `make` и перейти к [следующему](../step10/README.md) шагу
+Вы сделали апи. Правда оно не работает и пока-что без тестов. В [следующем](../step09/README.md) шаге мы закончим нашу программу, добавив запуск.
