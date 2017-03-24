@@ -1,4 +1,5 @@
 # Шаг 13. Внедряем хранилище в API
+Получается у нас такая структура. `sync.WaitGroup` нам нужна для того, чтобы синхронизировать несколько горутин, которые мы запустим позднее.
 
 ```Go
 type API struct {
@@ -9,25 +10,7 @@ type API struct {
 }
 ```
 
-Нам нужны будут пустые методы для этого, которые мы имплементируем позже.
-
-```
-func (a *API) addDriver(c echo.Context) error {
-	return nil
-}
-func (a *API) getDriver(c echo.Context) error {
-	return nil
-}
-func (a *API) deleteDriver(c echo.Context) error {
-	return nil
-}
-func (a *API) nearestDrivers(c echo.Context) error {
-	return nil
-}
-```
-
-## New или создаем API
-В этом методе, мы инициализируем все наши зависимости и настраиваем роуты.
+## Новый New 
 ```Go
 func New(bindAddr string, lruSize int) *API {
 	a := &API{}
@@ -59,6 +42,7 @@ func (a *API) removeExpired() {
 	}
 }
 ```
+Этот метод - заблокирует наш основной поток. Вы можете попробовать его вызвать и после этого запустить например веб-сервер. Веб сервер в этом случае у нас не запусится. Вот тут к нам на выручку и приходит `sync.WaitGroup`
 
 ## Start
 В этом методе мы просто запустим веб-сервер и удаление протухших водителей в двух горутинах. Заблокируем основной поток с помощью метода `WaitStop()`
@@ -75,46 +59,6 @@ func (a *API) Start() {
 }
 
 ```
-
-### Запросы и ответы
-Нам понадобятся следующие структуры для получения запросов
-```Go
-type (
-    Location struct {
-        Latitude float64 `json:"lat"`
-        Longitude float64 `json:"lon"`
-    }
-
-    Payload struct {
-      Timestamp int64 `json:"timestamp"`
-      DriverID int `json:"driver_id"`
-      Location Location `json:"location"`
-    }
-)
-```
-Для возврата ответов используем следующее
-```Go
-type (
-	// Структура для возврата ответа по умолчанию
-	DefaultResponse struct {
-		Success bool   `json:"success"`
-		Message string `json:"message"`
-	}
-	// Для возврата ответа, когда мы запрашиваем водителя
-	DriverResponse struct {
-		Success bool            `json:"success"`
-		Message string          `json:"message"`
-		Driver  *storage.Driver `json:"driver"`
-	}
-	// Для возврата ближайших водителей
-	NearestDriverResponse struct {
-		Success bool              `json:"success"`
-		Message string            `json:"message"`
-		Drivers []*storage.Driver `json:"drivers"`
-	}
-)
-```
-
 
 ## addDriver
 ```Go
@@ -243,6 +187,17 @@ func (a *API) nearestDrivers(c echo.Context) error {
 		Locations    *lru.LRU `json:"-"`
 	}
 
+```
+Ну и в `main.go` нужно добавить следующее
+```Go
+func main() {
+	bindAddr := flag.String("bind_addr", ":8080", "Set bind address")
+	size := flag.Int("lru_size", 20, "Set lru size per driver")
+	flag.Parse()
+	a := api.New(*bindAddr, *size)
+	a.Start()
+	a.WaitStop()
+}
 ```
 ## Поздравляю!
 Вы сделали апи. В [следующем](../step14/README.md) шаге мы напишем тесты на нее
