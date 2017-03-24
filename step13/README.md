@@ -10,7 +10,7 @@ type API struct {
 }
 ```
 
-## Новый New 
+## Новый New
 ```Go
 func New(bindAddr string, lruSize int) *API {
 	a := &API{}
@@ -200,4 +200,4 @@ func main() {
 }
 ```
 ## Поздравляю!
-Вы сделали апи. В [следующем](../step14/README.md) шаге мы напишем тесты на нее
+Вы все сделали Переходите к  [следующему](../step14/README.md) шагу
