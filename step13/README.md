@@ -2,7 +2,7 @@
 
 ## addDriver
 ```Go
-func (a *DBAPI) addDriver(c echo.Context) error {
+func (a *API) addDriver(c echo.Context) error {
 	p := &Payload{}
 	if err := c.Bind(p); err != nil {
 		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
@@ -32,7 +32,7 @@ func (a *DBAPI) addDriver(c echo.Context) error {
 
 ## getDriver
 ```Go
-func (a *DBAPI) getDriver(c echo.Context) error {
+func (a *API) getDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
 	if err != nil {
@@ -58,7 +58,7 @@ func (a *DBAPI) getDriver(c echo.Context) error {
 
 ## deleteDriver
 ```Go
-func (a *DBAPI) deleteDriver(c echo.Context) error {
+func (a *API) deleteDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
 	if err != nil {
@@ -82,7 +82,7 @@ func (a *DBAPI) deleteDriver(c echo.Context) error {
 
 ## NearestDrivers
 ```Go
-func (a *DBAPI) nearestDrivers(c echo.Context) error {
+func (a *API) nearestDrivers(c echo.Context) error {
 	lat := c.Param("lat")
 	lon := c.Param("lon")
 	if lat == "" || lon == "" {
