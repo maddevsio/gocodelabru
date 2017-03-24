@@ -1,210 +1,94 @@
-## Шаг 4. Имплементируем LRU (часть 2)
-В прошлой части мы сделали реализацию методов `New`, `Add`, `removeOldest`, `removeElement`, `Len` и написали тест на работу `Add` метода.
-В этой части мы продолжим строить  `LRU` кеш.
+# Шаг 4. Делаем HTTP API
 
-## Purge
-Задача этого метода - полностью удалить все данные в хранилище. Для этого нам нужно просто пройти по всем элементам в карте и удалить их
+## addDriver
 ```Go
-// Purge completely clears cache
-func (l *LRU) Purge() {
-	for k := range l.items {
-		delete(l.items, k)
+func addDriver(c echo.Context) error {
+	p := &Payload{}
+	if err := c.Bind(p); err != nil {
+		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
+			Success: false,
+			Message: "Set content-type application/json or check your payload data",
+		})
 	}
-	l.evictList.Init()
-}
-
-```
-
-## Get
-Get -  чтобы получить элемент по его ключу. Забирать его лучше из карты и возвращать, есть ли этот элемент в хранилище или нет
-```Go
-// Get looks up a key's value from the cache
-func (l *LRU) Get(key interface{}) (value interface{}, ok bool) {
-	if ent, ok := l.items[key]; ok {
-		l.evictList.MoveToFront(ent)
-		return ent.Value.(*entry).value, true
-	}
-	return
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: false,
+		Message: "Added",
+	})
 }
 ```
+Как вы можете заметить тут, есть не понятный метод `c.Bind`. Этот метод связывает данные, которые у нас поступают в структуру. Передавать обязательно нужно указатель на стуктуру.
 
-## Contains
-Для того, чтобы знать, есть ли у нас элемент в кеше или нет
-
+## getDriver
 ```Go
-// Contains check if key is in cache without updating
-// recent-ness or deleting it for being state.
-func (l *LRU) Contains(key interface{}) (ok bool) {
-	_, ok = l.items[key]
-	return ok
-}
-```
-Тест, чтобы знать, что метод работает.
-```Go
-
-// Test that Contains doesn't update recent-ness
-func TestLRU_Contains(t *testing.T) {
-	l, err := New(2)
+func getDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	id, err := strconv.Atoi(driverID)
 	if err != nil {
-		t.Fatalf("err: %v", err)
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
 	}
-
-	l.Add(1, 1)
-	l.Add(2, 2)
-	if !l.Contains(1) {
-		t.Errorf("1 should be contained")
-	}
-
-	l.Add(3, 3)
-	if l.Contains(1) {
-		t.Errorf("Contains should not have updated recent-ness of 1")
-	}
+	return c.JSON(http.StatusOK, &DriverResponse{
+		Success: true,
+		Message: "found",
+		Driver:  id,
+	})
 }
-```
-## Remove
-Задача этого метода - полностью удалить элемент по ключу, если он существует в нашем кеше. При этом нам нужно знать, удалился элемент или нет.
-```Go
-// Remove removes prodided key from the cache, returning if the
-// key was contained
-func (l *LRU) Remove(key interface{}) bool {
-	if ent, ok := l.items[key]; ok {
-		l.removeElement(ent)
-		return true
-	}
-	return false
-}
+
 ```
 
-## GetOldest и RemoveOldest
-
-Эти методы могут пригодится для того, чтобы извне получать и/или удалять самые "старые" значения в кеше
+## deleteDriver
 ```Go
-// RemoveOldest removes oldest item from cache
-func (l *LRU) RemoveOldest() (interface{}, interface{}, bool) {
-	ent := l.evictList.Back()
-	if ent != nil {
-		l.removeElement(ent)
-		kv := ent.Value.(*entry)
-		return kv.key, kv.value, true
-	}
-	return nil, nil, false
-}
-
-// GetOldest returns oldest item from cache
-func (l *LRU) GetOldest() (interface{}, interface{}, bool) {
-	ent := l.evictList.Back()
-	if ent != nil {
-		kv := ent.Value.(*entry)
-		return kv.key, kv.value, true
-	}
-	return nil, nil, false
-}
-```
-
-Плюс к этому тест
-```Go
-func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
-	l, err := New(128)
+func deleteDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	_, err := strconv.Atoi(driverID)
 	if err != nil {
-		t.Fatalf("err: %v", err)
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
 	}
-	for i := 0; i < 256; i++ {
-		l.Add(i, i)
-	}
-	k, _, ok := l.GetOldest()
-	if !ok {
-		t.Fatalf("missing")
-	}
-	if k.(int) != 128 {
-		t.Fatalf("bad: %v", k)
-	}
-
-	k, _, ok = l.RemoveOldest()
-	if !ok {
-		t.Fatalf("missing")
-	}
-	if k.(int) != 128 {
-		t.Fatalf("bad: %v", k)
-	}
-
-	k, _, ok = l.RemoveOldest()
-	if !ok {
-		t.Fatalf("missing")
-	}
-	if k.(int) != 129 {
-		t.Fatalf("bad: %v", k)
-	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: true,
+		Message: "removed",
+	})
 }
 ```
 
-## Keys
-
-Этот метод нужен для того, чтобы получить все ключи в нашем кеше. Чтобы потом, например, получить по ним значение из кеша.
+## NearestDrivers
 ```Go
-// Keys returns a slice of the keys in the cache
-func (l *LRU) Keys() []interface{} {
-	keys := make([]interface{}, len(l.items))
-	i := 0
-	for ent := l.evictList.Back(); ent != nil; ent = ent.Prev() {
-		keys[i] = ent.Value.(*entry).key
-		i++
+func nearestDrivers(c echo.Context) error {
+	lat := c.Param("lat")
+	lon := c.Param("lon")
+	if lat == "" || lon == "" {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "empty coordinates",
+		})
 	}
-	return keys
+	_, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	_, err = strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	// TODO: Add nearest
+	return c.JSON(http.StatusOK, &NearestDriverResponse{
+		Success: false,
+		Message: "found",
+	})
 }
-```
 
-## На этом все. 
-Мы закончили с построением кеша. Напишем тест, чтобы прогнать все возможные сценарии и удостоверится, что код работает.
-
-```Go
-func TestLRU(t *testing.T) {
-	l, err := New(128)
-	assert.NoError(t, err)
-
-	for i := 0; i < 256; i++ {
-		l.Add(i, i)
-	}
-	assert.Equal(t, 128, l.Len())
-
-	for i, k := range l.Keys() {
-		if v, ok := l.Get(k); !ok || v != k || v != i+128 {
-			t.Fatalf("bad key: %v", k)
-		}
-	}
-	for i := 0; i < 128; i++ {
-		_, ok := l.Get(i)
-		assert.False(t, ok)
-	}
-	for i := 128; i < 256; i++ {
-		_, ok := l.Get(i)
-		assert.True(t, ok)
-	}
-	for i := 128; i < 192; i++ {
-		ok := l.Remove(i)
-		assert.True(t, ok)
-		ok = l.Remove(i)
-		assert.False(t, ok)
-		_, ok = l.Get(i)
-		assert.False(t, ok)
-	}
-
-	l.Get(192) // expect 192 to be last key in l.Keys()
-
-	for i, k := range l.Keys() {
-		if (i < 63 && k != i+193) || (i == 63 && k != 192) {
-			t.Fatalf("out of order key: %v", k)
-		}
-	}
-
-	l.Purge()
-	if l.Len() != 0 {
-		t.Fatalf("bad len: %v", l.Len())
-	}
-	if _, ok := l.Get(200); ok {
-		t.Fatalf("should contain nothing")
-	}
-}
 ```
 
 ## Поздравляю!
-Вы реализовали LRU кеш и вы уверены, что он работает. Но в нем есть проблема с тем, что он не консистентный. Данные могут в нем дублироваться. В [следующей](../step05/README.md) части мы сделаем консистентность и распланируем наше хранилище
+У нас есть реализованные методы "заглушки". Учитывая то, что у нас сейчас нет хранения, мы начнем реализовывать в [следующих](../step05/README.md) шагах.

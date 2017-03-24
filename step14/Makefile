@@ -1,4 +1,4 @@
-GET=codelab
+TARGET=codelab
 
 all: fmt clean build
 
@@ -16,6 +16,3 @@ fmt:
 
 test:
 	go test -v ./...
-
-run:
-	go run main.go

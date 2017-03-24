@@ -1,51 +1,297 @@
-## Шаг 5. Строим сторадж
-У нас есть LRU хранилище. Нам нужно решить две задачи на этом шаге:
+## Шаг 5. Дробим на мелкие части
+Вот когда у нас уже есть какой-то код, то можно вынести все из main.go. Сейчас первый кандидат - весь код, который относится к API.
+Давайте его и вынесем.
 
-1. Сделать хранилище консистентным
-2. Придумать ему архитектуру
-
-
-Напомню, нам нужно хранить следующие данные
+У нас есть следующий код
 ```Go
-type (
-  Location struct {
-    Lat float64
-    Lon float64
-  }
-  Driver struct {
-    ID int 
-    LastLocation Location
-    Locations *lru.LRU
-  }
+package main
+
+import (
+	"log"
+	"net/http"
+	"strconv"
+
+	"github.com/labstack/echo"
 )
+
+type (
+	Location struct {
+		Latitude  float64 `json:"lat"`
+		Longitude float64 `json:"lon"`
+	}
+	Payload struct {
+		Timestamp int64    `json:"timestamp"`
+		DriverID  int      `json:"driver_id"`
+		Location  Location `json:"location"`
+	}
+	// Структура для возврата ответа по умолчанию
+	DefaultResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// Для возврата ответа, когда мы запрашиваем водителя
+	DriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Driver  int    `json:"driver"`
+	}
+	// Для возврата ближайших водителей
+	NearestDriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Drivers []int  `json:"drivers"`
+	}
+)
+
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
+}
+func addDriver(c echo.Context) error {
+	p := &Payload{}
+	if err := c.Bind(p); err != nil {
+		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
+			Success: false,
+			Message: "Set content-type application/json or check your payload data",
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: false,
+		Message: "Added",
+	})
+}
+func getDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	id, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	return c.JSON(http.StatusOK, &DriverResponse{
+		Success: true,
+		Message: "found",
+		Driver:  id,
+	})
+}
+
+func deleteDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	_, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: true,
+		Message: "removed",
+	})
+}
+func nearestDrivers(c echo.Context) error {
+	lat := c.Param("lat")
+	lon := c.Param("lon")
+	if lat == "" || lon == "" {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "empty coordinates",
+		})
+	} 
+	_, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	_, err = strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	// TODO: Add nearest
+	return c.JSON(http.StatusOK, &NearestDriverResponse{
+		Success: false,
+		Message: "found",
+	})
+}
 ```
-Так и запишем их в `storage/storage.go`
+К нему не хватает также и тестов. Плюс к этому, желательно как-то конфигурировать порт, на котором будет стартовать наш веб-сервер.
 
-Напомню, что нам нужно реализовать следующие фичи:
-
-1. New(size) - для инциализации стораджа
-2. Set(key, value) - для добавления или обновления элемента
-3. Delete(key) - для удаления
-4. Nearest() - для получения блищайших элементов
-5. Get(key) - для получения водителя
-
-Из формулировки задачи мы выбрали `R-tree` для реализации быстрой работы `Nearest()` метода. Его мы возьмем [отсюда](https://github.com/dhconnelly/rtreego)
-
-Вырисовывается следующая структура для хранения
+Создадим папку `api` и переместим весь код, который относится к API в `api/api.go`. Но для начала, нам нужна будет структура, которая понадобиться нам в будущем. Например для того, чтобы подключить в API нашу БД, которую мы сделаем позже. А сейчас там будем хранить копию echo, и адрес на котором будет слушать приложение
 ```Go
-type DriverStorage struct {
-  mu *sync.RWMutex
-  drivers map[int]*Driver
-  locations *rtreego.Rtree
-  lruSize int
+type API struct {
+  echo *echo.Echo
+  bindAddr string
+}
+```
+На первых парах нам хватит такой простой структуры. При переносе нужно будет делать это методами класса. Ну и сделать метод для создания новой копии API.
+
+## New или создаем API
+В этом методе, мы инициализируем все наши зависимости и настраиваем роуты.
+```Go
+func New(bindAddr string) *API {
+	a := &API{}
+	a.echo = echo.New()
+  	a.bindAddr = bindAddr
+	g := a.echo.Group("/api")
+	g.POST("/driver/", a.addDriver)
+	g.GET("/driver/:id", a.getDriver)
+	g.DELETE("/driver/:id", a.deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", a.nearestDrivers)
+	return a
 }
 ```
 
-В этой структуре нам нужны:
+## Start
+Этот метод нужен будет для того, чтобы стартовать наше приложение
+```Go
+func (a *API) Start() error {
+	return a.echo.Start(a.bindAddr)
+}
+```
 
-1. sync.RWMutex для того, чтобы данные у нас были консистентны
-2. drivers - для хранения всех водителей
-3. locations - для того, чтобы возвращать блишайших к нам водителей
+## Остальные методы
+Все остальные методы нужно привести к виду `func (a *API) addDriver(c echo.Context) error`
+
+```Go
+func (a *API) addDriver(c echo.Context) error {
+	p := &Payload{}
+	if err := c.Bind(p); err != nil {
+		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
+			Success: false,
+			Message: "Set content-type application/json or check your payload data",
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: false,
+		Message: "Added",
+	})
+}
+func (a *API) getDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	id, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	return c.JSON(http.StatusOK, &DriverResponse{
+		Success: true,
+		Message: "found",
+		Driver:  id,
+	})
+}
+
+func (a *API) deleteDriver(c echo.Context) error {
+	driverID := c.Param("id")
+	_, err := strconv.Atoi(driverID)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "could not convert string to integer",
+		})
+	}
+	return c.JSON(http.StatusOK, &DefaultResponse{
+		Success: true,
+		Message: "removed",
+	})
+}
+func (a *API) nearestDrivers(c echo.Context) error {
+	lat := c.Param("lat")
+	lon := c.Param("lon")
+	if lat == "" || lon == "" {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "empty coordinates",
+		})
+	}
+	_, err := strconv.ParseFloat(lat, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	_, err = strconv.ParseFloat(lon, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, &DefaultResponse{
+			Success: false,
+			Message: "failed convert float",
+		})
+	}
+	// TODO: Add nearest
+	return c.JSON(http.StatusOK, &NearestDriverResponse{
+		Success: false,
+		Message: "found",
+	})
+}
+```
+
+А все наши модели перенесем в `api/models.go`
+```Go
+package api
+
+type (
+	Location struct {
+		Latitude  float64 `json:"lat"`
+		Longitude float64 `json:"lon"`
+	}
+	Payload struct {
+		Timestamp int64    `json:"timestamp"`
+		DriverID  int      `json:"driver_id"`
+		Location  Location `json:"location"`
+	}
+	// Структура для возврата ответа по умолчанию
+	DefaultResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// Для возврата ответа, когда мы запрашиваем водителя
+	DriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Driver  int    `json:"driver"`
+	}
+	// Для возврата ближайших водителей
+	NearestDriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Drivers []int  `json:"drivers"`
+	}
+)
+
+```
+
+в main.go у нас остался только этот код
+```Go
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
+}
+```
+Который нужно модифицировать примерно в это
+``` 
+func main() {
+	a := api.New(":9111")
+	log.Fatal(a.Start())
+}
+```
 
 ## Поздравляю! 
-Мы сделали архитектуру для нашего хранилища. Разобрались как сделать консистентность данных. Реализовывать его будем в [следующем](../step06/README.md) уроке
+Мы раздробили нашу програму на несколько частей. В [следующей](../step06/README.md) части мы поработаем с флагами, конфигурацией приложения и Makefile

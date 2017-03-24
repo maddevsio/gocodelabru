@@ -1,34 +1,52 @@
-package api
+package main
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/labstack/echo"
 )
 
-type API struct {
-	echo     *echo.Echo
-	bindAddr string
-}
+type (
+	Location struct {
+		Latitude  float64 `json:"lat"`
+		Longitude float64 `json:"lon"`
+	}
+	Payload struct {
+		Timestamp int64    `json:"timestamp"`
+		DriverID  int      `json:"driver_id"`
+		Location  Location `json:"location"`
+	}
+	// Структура для возврата ответа по умолчанию
+	DefaultResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// Для возврата ответа, когда мы запрашиваем водителя
+	DriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Driver  int    `json:"driver"`
+	}
+	// Для возврата ближайших водителей
+	NearestDriverResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+		Drivers []int  `json:"drivers"`
+	}
+)
 
-func New(bindAddr string) *API {
-	a := &API{}
-	a.echo = echo.New()
-	a.bindAddr = bindAddr
-	g := a.echo.Group("/api")
-	g.POST("/driver/", a.addDriver)
-	g.GET("/driver/:id", a.getDriver)
-	g.DELETE("/driver/:id", a.deleteDriver)
-	g.GET("/driver/:lat/:lon/nearest", a.nearestDrivers)
-	return a
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
 }
-
-func (a *API) Start() error {
-	return a.echo.Start(a.bindAddr)
-}
-
-func (a *API) addDriver(c echo.Context) error {
+func addDriver(c echo.Context) error {
 	p := &Payload{}
 	if err := c.Bind(p); err != nil {
 		return c.JSON(http.StatusUnsupportedMediaType, &DefaultResponse{
@@ -41,7 +59,7 @@ func (a *API) addDriver(c echo.Context) error {
 		Message: "Added",
 	})
 }
-func (a *API) getDriver(c echo.Context) error {
+func getDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	id, err := strconv.Atoi(driverID)
 	if err != nil {
@@ -57,7 +75,7 @@ func (a *API) getDriver(c echo.Context) error {
 	})
 }
 
-func (a *API) deleteDriver(c echo.Context) error {
+func deleteDriver(c echo.Context) error {
 	driverID := c.Param("id")
 	_, err := strconv.Atoi(driverID)
 	if err != nil {
@@ -71,7 +89,7 @@ func (a *API) deleteDriver(c echo.Context) error {
 		Message: "removed",
 	})
 }
-func (a *API) nearestDrivers(c echo.Context) error {
+func nearestDrivers(c echo.Context) error {
 	lat := c.Param("lat")
 	lon := c.Param("lon")
 	if lat == "" || lon == "" {

@@ -1,144 +1,95 @@
 package storage
 
 import (
-	"fmt"
-	"sync"
-	"time"
-
-	"github.com/dhconnelly/rtreego"
-	"github.com/pkg/errors"
-
-	"github.com/maddevsio/gocodelabru/step07/storage/lru"
+	"errors"
+	"math"
 )
 
 type (
+	// Location used for storing driver's location
 	Location struct {
-		Lat float64 `json:"lat"`
-		Lon float64 `json:"lon"`
+		Lat float64
+		Lon float64
 	}
+	// Driver model to store driver data
 	Driver struct {
-		ID           int      `json:"id"`
-		LastLocation Location `json:"location"`
-		Expiration   int64    `json:"-"`
-		Locations    *lru.LRU `json:"-"`
-	}
-	DriverStorage struct {
-		mu        *sync.RWMutex
-		drivers   map[int]*Driver
-		locations *rtreego.Rtree
-		lruSize   int
+		ID           int
+		LastLocation Location
 	}
 )
 
-// Bounds method needs for correct working of rtree
-// Lat - Y, Lon - X on coordinate system
-func (d *Driver) Bounds() *rtreego.Rect {
-	return rtreego.Point{d.LastLocation.Lat, d.LastLocation.Lon}.ToRect(0.01)
+// DriverStorage is main storage for our project
+type DriverStorage struct {
+	drivers map[int]*Driver
 }
 
-// Expired returns true if the item has expired.
-func (d *Driver) Expired() bool {
-	if d.Expiration == 0 {
-		return false
-	}
-	return time.Now().UnixNano() > d.Expiration
+// New creates new instance of DriverStorage
+func New() *DriverStorage {
+	d := &DriverStorage{}
+	d.drivers = make(map[int]*Driver)
+	return d
 }
 
-// New initializes now storage
-func New(lruSize int) *DriverStorage {
-	s := new(DriverStorage)
-	s.drivers = make(map[int]*Driver)
-	s.locations = rtreego.NewTree(2, 25, 50)
-	s.mu = new(sync.RWMutex)
-	s.lruSize = lruSize
-	return s
+// Set sets driver to storage by key
+func (d *DriverStorage) Set(key int, driver *Driver) {
+	d.drivers[key] = driver
 }
 
-// Set an Driver to the storage, replacing any existing item.
-func (s *DriverStorage) Set(driver *Driver) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	d, ok := s.drivers[driver.ID]
-	if ok {
-		deleted := s.locations.Delete(d)
-		if !deleted {
-			return fmt.Errorf("failed to remove driver %d from r-tree", d.ID)
-		}
-
-	}
+// Delete removes driver from storage by key
+func (d *DriverStorage) Delete(key int) error {
+	_, ok := d.drivers[key]
 	if !ok {
-		d = driver
-		cache, err := lru.New(s.lruSize)
-		if err != nil {
-			return errors.Wrap(err, "could not create LRU")
-		}
-		d.Locations = cache
+		return errors.New("Driver does not exist")
 	}
-	d.LastLocation = driver.LastLocation
-	d.Locations.Add(time.Now().UnixNano(), d.LastLocation)
-	d.Expiration = driver.Expiration
-	s.locations.Insert(d)
-	s.drivers[driver.ID] = driver
+	delete(d.drivers, key)
 	return nil
 }
 
-// Delete deletes a driver from storage. Does nothing if the driver is not in the storage
-func (s *DriverStorage) Delete(id int) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	d, ok := s.drivers[id]
+// Get gets driver from storage and an error if nothing found
+func (d *DriverStorage) Get(key int) (*Driver, error) {
+	driver, ok := d.drivers[key]
 	if !ok {
-		return errors.New("does not exist")
+		return nil, errors.New("Driver does not exist")
 	}
-	deleted := s.locations.Delete(d)
-	if deleted {
-		delete(s.drivers, d.ID)
-		return nil
-	}
-	return errors.New("could not remove item")
+	return driver, nil
 }
 
-// Get returns driver by key
-func (s *DriverStorage) Get(id int) (*Driver, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	d, ok := s.drivers[id]
-	if !ok {
-		return nil, errors.New("does not exist")
-	}
-	return d, nil
-}
-
-// Nearest returns nearest drivers
-func (s *DriverStorage) Nearest(point rtreego.Point, count int) []*Driver {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	results := s.locations.NearestNeighbors(count, point)
-	var drivers []*Driver
-	for _, item := range results {
-		if item == nil {
-			continue
-		}
-		drivers = append(drivers, item.(*Driver))
-	}
-	return drivers
-
-}
-
-// DeleteExpired removes all expired items from storage
-func (s *DriverStorage) DeleteExpired() {
-	now := time.Now().UnixNano()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, v := range s.drivers {
-		if v.Expiration > 0 && now > v.Expiration {
-			deleted := s.locations.Delete(v)
-			if deleted {
-				delete(s.drivers, v.ID)
-			}
+// Nearest returns nearest drivers by locaion
+func (d *DriverStorage) Nearest(radius, lat, lon float64) []*Driver {
+	var result []*Driver
+	for _, driver := range d.drivers {
+		distance := Distance(lat, lon, driver.LastLocation.Lat, driver.LastLocation.Lon)
+		if distance <= radius {
+			result = append(result, driver)
 		}
 	}
+	return result
+}
+
+// haversin(θ) function
+func hsin(theta float64) float64 {
+	return math.Pow(math.Sin(theta/2), 2)
+}
+
+// Distance function returns the distance (in meters) between two points of
+//     a given longitude and latitude relatively accurately (using a spherical
+//     approximation of the Earth) through the Haversin Distance Formula for
+//     great arc distance on a sphere with accuracy for small distances
+//
+// point coordinates are supplied in degrees and converted into rad. in the func
+//
+// distance returned is METERS!!!!!!
+// http://en.wikipedia.org/wiki/Haversine_formula
+func Distance(lat1, lon1, lat2, lon2 float64) float64 {
+	// convert to radians
+	// must cast radius as float to multiply later
+	var la1, lo1, la2, lo2, r float64
+	la1 = lat1 * math.Pi / 180
+	lo1 = lon1 * math.Pi / 180
+	la2 = lat2 * math.Pi / 180
+	lo2 = lon2 * math.Pi / 180
+	r = 6378100 // Earth radius in METERS
+	// calculate
+	h := hsin(la2-la1) + math.Cos(la1)*math.Cos(la2)*hsin(lo2-lo1)
+	return 2 * r * math.Asin(math.Sqrt(h))
 }

@@ -1,152 +1,98 @@
-## Шаг 3. Имплементируем LRU (часть 1)
-И вот теперь мы подобрались к интересным моментам нашей кодлабы. У вас уже есть структура проекта и теперь осталось написать  код :)
-Поэтому открываем пакет [storage](storage) в вашей IDE или редакторе и начнем с пакета `storage/lru`
+# Шаг 3. Проектируем HTTP API
+Нам нужны следующие HTTP API методы, исходя из описания задачи в задачи [Шаге 0](../step00/README.md)
+## API Методы
 
-## Структуры данных 
+1. POST /driver/ - добавить водителя
+2. GET /driver/:id - получить информацию о водителе
+3. DELETE /driver/:id - удалить водителя
+4. GET /driver/:lat/:lon/nearest - получить ближайших водителей.
 
-Нам нужно подумать, как же реализовывать кеш. С одной стороны нам нужно key-value хралилище и стандартный `map[interface{}]interface{}` нам подойдет. В этом случае мы сможем и добавлять и удалять элементы в кеше быстро. С другой стороны нам нужен какой-то список из элементов, в котором мы бы могли двигать элементы как вверх стопки, так и забирать последний. Плюс ко всему нам нужна возможность удалять значения из этого списка. Кажется, что [container/list](https://golang.org/pkg/container/list/) нам подойдет.
+Для построения API мы будем использовать фреймворк [echo](http://echo.labstack.com)
 
-Получается кеш мы сможем описать следующим образом
+Нам нужны будут пустые методы для этого, которые мы имплементируем позже.
 
-```Go
-type LRU struct {
-  size int
-  evictList *list.List
-  items map[interface{}]*list.Element
+```
+func addDriver(c echo.Context) error {
+	return nil
+}
+func getDriver(c echo.Context) error {
+	return nil
+}
+func deleteDriver(c echo.Context) error {
+	return nil
+}
+func nearestDrivers(c echo.Context) error {
+	return nil
 }
 ```
-Также нам нужна структура для того, чтобы хранить данные в списке и карте.
-```Go
-// entry used to store value in evictList
-type entry struct {
-	key   interface{}
-	value interface{}
+
+Получается примерно такой код.
+```
+package main
+
+import "github.com/labstack/echo"
+
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
+}
+
+func addDriver(c echo.Context) error {
+	return nil
+}
+func getDriver(c echo.Context) error {
+	return nil
+}
+func deleteDriver(c echo.Context) error {
+	return nil
+}
+func nearestDrivers(c echo.Context) error {
+	return nil
 }
 ```
 
-в файле `lru/lru.go` следующий код
+### Запросы и ответы
+Нам понадобятся следующие структуры для получения запросов
 ```Go
-package lru
-
-import (
-	"container/list"
-)
-
 type (
-	LRU struct {
-		size      int
-		evictList *list.List
-		items     map[interface{}]*list.Element
+    Location struct {
+        Latitude float64 `json:"lat"`
+        Longitude float64 `json:"lon"`
+    }
+    Payload struct {
+      Timestamp int64 `json:"timestamp"`
+      DriverID int `json:"driver_id"`
+      Location Location `json:"location"`
+    }
+)
+```
+Для возврата ответов используем следующее
+```Go
+type (
+	// Структура для возврата ответа по умолчанию
+	DefaultResponse struct {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
 	}
-	// entry used to store value in evictList
-	entry struct {
-		key   interface{}
-		value interface{}
+	// Для возврата ответа, когда мы запрашиваем водителя
+	DriverResponse struct {
+		Success bool            `json:"success"`
+		Message string          `json:"message"`
+		Driver  int `json:"driver"`
+	}
+	// Для возврата ближайших водителей
+	NearestDriverResponse struct {
+		Success bool              `json:"success"`
+		Message string            `json:"message"`
+		Drivers []int `json:"drivers"`
 	}
 )
-
 ```
 
-## New
-Для того, чтобы создать кеш нам нужно передать его размер в параметрах и проинициализировать все структуры хранения.
-Получается следующее
-```Go
-// New initialized a new LRU with fixed size
-func New(size int) (*LRU, error) {
-	if size <= 0 {
-		return nil, errors.New("Size must be greater than 0")
-	}
-	c := &LRU{
-		size:      size,
-		evictList: list.New(),
-		items:     make(map[interface{}]*list.Element),
-	}
-	return c, nil
-}
-```
-
-## Add
-
-```Go
-// Add adds a value to the cache. Return true if eviction occured
-func (l *LRU) Add(key, value interface{}) bool {
-	if ent, ok := l.items[key]; ok {
-		l.evictList.MoveToFront(ent)
-		ent.Value.(*entry).value = value
-		return false
-	}
-	ent := &entry{key, value}
-	entry := l.evictList.PushFront(ent)
-	l.items[key] = entry
-}
-
-```
-У нас Add делает две вещи. Добавляет и обновляет значение по ключу. При этом с помощью API `container/list` он управляет положением элемента в списке. Не хватает лишь удаления элемента, если у нас элементов в нашем кеше больше чем его размер
-
-## Удаление наименее используемого элемента
-```Go
-func (l *LRU) removeOldest() {
-	ent := l.evictList.Back()
-	if ent != nil {
-		l.removeElement(ent)
-	}
-}
-func (l *LRU) removeElement(e *list.Element) {
-	l.evictList.Remove(e)
-	kv := e.Value.(*entry)
-	delete(l.items, kv.key)
-}
-```
-По закладываемой логике, нам нужно удалить всего-лишь последний элемент из списка. Удалять нужно будет его и из нашего списка и из карты.
-
-Вернемся к добавлению элемента и внедрим удаление самого старого элемента, если мы превышаем размер хранилища. Получится следующий код
-
-```Go
-// Add adds a value to the cache. Return true if eviction occured
-func (l *LRU) Add(key, value interface{}) bool {
-	if ent, ok := l.items[key]; ok {
-		l.evictList.MoveToFront(ent)
-		ent.Value.(*entry).value = value
-		return false
-	}
-	ent := &entry{key, value}
-	entry := l.evictList.PushFront(ent)
-	l.items[key] = entry
-	evict := l.evictList.Len() > l.size
-	if evict {
-		l.removeOldest()
-	}
-	return evict
-}
-```
-Напишем на него тест в `lru/lru_test.go`
-```Go
-// Test that Add returns true/false if an eviction occurred
-func TestLRU_Add(t *testing.T) {
-
-	l, err := New(1)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-
-	if l.Add(1, 1) == true {
-		t.Errorf("should not have an eviction")
-	}
-	if l.Add(2, 2) == false {
-		t.Errorf("should have an eviction")
-	}
-}
-
-```
-## Len
-С Len() все просто. Нам нужно вернуть только длину списка, чтобы узнать сколько элементов у нас сейчас в кеше
-```Go
-// Len returns the number of items in cache
-func (l *LRU) Len() int {
-	return l.evictList.Len()
-}
-```
-
-# Поздравляю!
-
-Вы реализовали создание, добавление и удаление самого старого элемента из кеша и написали тест на добавление элемента. Мы продолжим работу в [следующей части](../step04/README.md)
+## Поздравляю!
+У нас есть основные структуры для получения/отправления данных и методы "заглушки". В [следующей](../step04/README.md) части мы реализуем их.

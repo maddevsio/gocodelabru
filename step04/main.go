@@ -1,4 +1,10 @@
-package api
+package main
+
+import (
+	"log"
+
+	"github.com/labstack/echo"
+)
 
 type (
 	Location struct {
@@ -28,3 +34,26 @@ type (
 		Drivers []int  `json:"drivers"`
 	}
 )
+
+func main() {
+	e := echo.New()
+	g := e.Group("/api")
+	g.POST("/driver/", addDriver)
+	g.GET("/driver/:id", getDriver)
+	g.DELETE("/driver/:id", deleteDriver)
+	g.GET("/driver/:lat/:lon/nearest", nearestDrivers)
+	log.Fatal(e.Start(":9111"))
+}
+
+func addDriver(c echo.Context) error {
+	return nil
+}
+func getDriver(c echo.Context) error {
+	return nil
+}
+func deleteDriver(c echo.Context) error {
+	return nil
+}
+func nearestDrivers(c echo.Context) error {
+	return nil
+}

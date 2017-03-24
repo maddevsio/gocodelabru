@@ -1,76 +1,52 @@
-# Шаг 2. Что нужно знать о тестировании и написании тестов в Go.
+# Шаг 2. Hello world
 
-Тестирование нужно для слабаков, которые не могут написать с первой попытки работающий код. :trollface:
-Поэтому в мире существует много инстументов для того, чтобы писать тесты. Go не исключение. В Go есть пакет `testing` функционала которого хватит всем.
-
-В Go тестовые файлы обычно лежат в той же самой папке, что и обычные файлы. Их можно узнать по присутсвию `_test.go`  в имени файла.
-
-Например посмотрим, как тестируют пакет `math` Go.
+Давайте напишем что-нибудь работающее. Например простое Hello world приложение. Откроем `main.go` в редакторе и напишем код.
 
 ```Go
-package math
+package main
 
-import "testing"
+import "fmt"
 
-func TestAverage(t *testing.T) {
-  var v float64
-  v = Average([]float64{1,2})
-  if v != 1.5 {
-    t.Error("Expected 1.5, got ", v)
-  }
+func main() {
+  fmt.Println("Hello world")
 }
 ```
 
-Запуск тестов происходит командой `go test`
+Теперь проект нужно собрать и запустить.
+Есть несколько вариантов запустить проект.
+``` 
+$ go run main.go
+Hello world
+```
 
 ```
-$ go test
-PASS
-ok      golang-book/chapter11/math      0.032s
+$ go build -o helloworld main.go
+$ ./helloworld
+Hello world
 ```
 
-А еще Go сообщество пропогандирует вместо копипаста в тестах использовать так называемые table tests. В этом случае у нас есть пары исходного значения и результата. А тесты прогоняем в цикле
-
+Учитывая то, что мы пишем веб приложение, давайте сделаем hello world в вебе.
 ```Go
-package math
+package main
 
-import "testing"
+import (
+        "fmt"
+        "log"
+        "net/http"
+)
 
-type testpair struct {
-  values []float64
-  average float64
+func hello(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "<h1>Hello world</h1>")
 }
-
-var tests = []testpair{
-  { []float64{1,2}, 1.5 },
-  { []float64{1,1,1,1,1,1}, 1 },
-  { []float64{-1,1}, 0 },
-}
-
-func TestAverage(t *testing.T) {
-  for _, pair := range tests {
-    v := Average(pair.values)
-    if v != pair.average {
-      t.Error(
-        "For", pair.values,
-        "expected", pair.average,
-        "got", v,
-      )
-    }
-  }
+func main() {
+        http.HandleFunc("/", hello)
+        log.Fatal(http.ListenAndServe(":9911", nil))
 }
 ```
-[Документация](http://godoc.org/testing) к пакету `testing`
+В этом приложении мы сделали простой вебсервер, который при запуске будет слушать 9911 порт и на любой урл будет возвращать нам `Hello world`
 
-А если вы запаритесь писать постоянно 
-```Go
-if smth != anoher {
-   t.Error("Error")
-}
-```
-То есть пакет [testify/assert](https://godoc.org/github.com/stretchr/testify/assert)
-
+Запустите и проверьте его работу сами
 
 ## Поздравляю!
 
-Вы теперь знаете как тестировать и чем тестировать в Go. В нашем проекте мы будем писать тесты. Без них никуда. Продолжение в [следующей](../step03/README.md) части
+У вас получилось что-то работающее. Продолжение в [следующей](../step03/README.md) части
