@@ -1,4 +1,4 @@
-# 10. Поздравляю!
+# 14. Поздравляю!
 ![](https://raw.githubusercontent.com/ashleymcnamara/gophers/master/7TH_BIRTHDAY.png)
 
 На этом воркшоп закончился. Конечно, БД получилась очень простая, но я надеюсь это было для вас полезным.
