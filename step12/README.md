@@ -30,7 +30,7 @@ func (d *Driver) Expired() bool {
 		locations *rtreego.Rtree
 		lruSize   int # для того, чтобы инициализировать хранилище по каждому водителю
 	}
-	```
+```
 ## Новый New 
 ```Go
 // New initializes now storage
