@@ -1,20 +1,8 @@
 ## Шаг 12. Делаем хранилище консистентным. Внедряем LRU
 
-Начнем с того, чтобы построить пространственный индекс, нам нужно знать границы точки. Это можно сделать, если мы сможем построить minimum bounding rectangle.
-R-tree принимает в нашем случае Spatial объект, который должен имплементировать метод `Bounds()` который как раз таки и должен возвращать прямоугольник.
+Для того, чтобы хранилище было консистентным нам хватит примитива `sync/Mutex`. Это обычный лок. С его помощью мы будем блокировать наше хранилище когда мы добаляем или удаляем элементы из него.
 
-Мы в наше хранилище будем класть экземпляры `Driver` Поэтому имплементируем ему метод `Bounds()`
-
-## Bounds()
-```Go
-// Bounds method needs for correct working of rtree
-// Lat - Y, Lon - X on coordinate system
-func (d *Driver) Bounds() *rtreego.Rect {
-	return rtreego.Point{d.LastLocation.Lat, d.LastLocation.Lon}.ToRect(0.01)
-}
-```
-Еще нам нужно сделать Expire механизм. Модифицируем структуру `Driver` и добавим туда `Expiration`
-
+Плюс нам нужно еще сделать Expire механизм. Для этого мы модифицируем структуру `Driver` и добавим туда `Expiration` Ну и для хранения последних точек мы добавим к водителю LRU.
 ```Go
 type Driver struct {
 		ID           int
@@ -34,8 +22,16 @@ func (d *Driver) Expired() bool {
 }
 
 ```
-
-## Как создать сторадж или реализуем New
+Расширяем хранилище
+```Go
+	DriverStorage struct {
+		mu        *sync.RWMutex # для синхронизации
+		drivers   map[int]*Driver
+		locations *rtreego.Rtree
+		lruSize   int # для того, чтобы инициализировать хранилище по каждому водителю
+	}
+	```
+## Новый New 
 ```Go
 // New initializes now storage
 func New(lruSize int) *DriverStorage {
@@ -52,21 +48,14 @@ func New(lruSize int) *DriverStorage {
 ## Set
 Этот метод у нас работает таким же образом. Мы и добавляем и обновляем данные.
 Метод этот возвращает ошибку, потому что в R-tree нет метода Update. Зато есть `Delete()` и `Insert()`.
-Поэтому перед тем как добавить элемент в БД, мы попробуем узнать есть ли он или нет. Если его нет, то мы проинициализируем LRU кеш ну и обновим все данные в итоге. Ошибку вернем только в случае, если мы не смогли удалить данные из нашего индекса.
+Поэтому перед тем как добавить элемент в БД, мы попробуем узнать есть ли он или нет. Если его нет, то мы проинициализируем LRU кеш ну и обновим все данные в итоге. Также откажемся от ключей. Они нам не нужны и мы будем только добавлять водителей. У нас же есть его ID для того, чтобы избегать дублирования
 ```Go
 // Set an Driver to the storage, replacing any existing item.
-func (s *DriverStorage) Set(driver *Driver) error {
+func (s *DriverStorage) Set(driver *Driver)  {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	d, ok := s.drivers[driver.ID]
-	if ok {
-		deleted := s.locations.Delete(d)
-		if !deleted {
-			return fmt.Errorf("failed to remove driver %d from r-tree", d.ID)
-		}
-
-	}
 	if !ok {
 		d = driver
 		cache, err := lru.New(s.lruSize)
@@ -74,11 +63,12 @@ func (s *DriverStorage) Set(driver *Driver) error {
 			return errors.Wrap(err, "could not create LRU")
 		}
 		d.Locations = cache
+		s.locations.Insert(d)
 	}
 	d.LastLocation = driver.LastLocation
 	d.Locations.Add(time.Now().UnixNano(), d.LastLocation)
 	d.Expiration = driver.Expiration
-	s.locations.Insert(d)
+
 	s.drivers[driver.ID] = driver
 	return nil
 }
@@ -142,8 +132,7 @@ func TestDriverStorage(t *testing.T) {
 }
 ```
 ## Nearest
-В основу реализации ближайших водителей легли следующие мысли. 
-Мы хотим возвращать ближайших водителей и привязываться к радиусу в этом моменте было бы бесполезно по следующим соображениям. Ближайший водитель может быть как за 100 метров, так и за пять километров. Поэтому для того, чтобы решить эту задачу более эффективно, нам всегда нужно получать N ближайших водителей.
+
 ```Go
 // Nearest returns nearest drivers
 func (s *DriverStorage) Nearest(point rtreego.Point, count int) []*Driver {
@@ -256,4 +245,4 @@ func TestExpire(t *testing.T) {
 ```
 
 ## Поздравляю!
-На текущий момент вы сделали структуру данных, которая решает задачу хранения. В [следующей](../step07/README.md) части мы будем делать HTTP API к нему.
+Мы сделали консистентное хранилище данных. В [следующей](../step13/README.md) части мы его внедрим к нам в API
