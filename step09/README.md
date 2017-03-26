@@ -89,6 +89,7 @@ func (d *DriverStorage) Delete(key int) error {
 ```Go
 // Nearest returns nearest drivers by locaion
 func (d *DriverStorage) Nearest(count int, lat, lon float64) []*Driver {
+	var drivers []*Driver
 	point := rtreego.Point{lat, lon}
 	results := d.locations.NearestNeighbors(count, point)
 	var drivers []*Driver
