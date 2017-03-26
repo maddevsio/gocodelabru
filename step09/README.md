@@ -46,6 +46,8 @@ func (d *Driver) Bounds() *rtreego.Rect {
 func New() *DriverStorage {
 	d := &DriverStorage{}
 	d.drivers = make(map[int]*Driver)
+	d.locations = rtreego.NewTree(2, 25, 50)
+
 	return d
 }
 ```
