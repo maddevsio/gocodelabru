@@ -20,7 +20,7 @@ func BenchmarkNearest(b *testing.B) {
 }
 ```
 И проверим работу на 100, 1000, 10000 элементах в хранилище.
-```Go
+```
 cd storage
 go test -bench=.
 ```
@@ -31,13 +31,13 @@ PASS
 ok      github.com/maddevsio/gocodelabru/step09/storage 1.460s
 ```
 Для 1000 элементов
-```Go
+```
 BenchmarkNearest-4          5000            272552 ns/op
 PASS
 ok      github.com/maddevsio/gocodelabru/step09/storage 1.402s
 ```
 Для 10000 элементов
-```Go
+```
 BenchmarkNearest-4           500           2799431 ns/op
 PASS
 ok      github.com/maddevsio/gocodelabru/step09/storage 1.714s

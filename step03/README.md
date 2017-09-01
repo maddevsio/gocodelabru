@@ -11,7 +11,7 @@
 
 Нам нужны будут пустые методы для этого, которые мы имплементируем позже.
 
-```
+```Go
 func addDriver(c echo.Context) error {
 	return nil
 }
@@ -27,7 +27,7 @@ func nearestDrivers(c echo.Context) error {
 ```
 
 Получается примерно такой код.
-```
+```Go
 package main
 
 import "github.com/labstack/echo"

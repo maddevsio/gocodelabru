@@ -12,7 +12,7 @@ type Driver struct {
 }
 ```
 Также сделаем метод `Expired()` для водителя, чтобы знать, нужно ли водителя удалять или нет
-```
+```Go
 // Expired returns true if the item has expired.
 func (d *Driver) Expired() bool {
 	if d.Expiration == 0 {
