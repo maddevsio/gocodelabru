@@ -157,7 +157,7 @@ PASS
 ok      github.com/maddevsio/gocodelabru/step10/storage 1.745s
 ```
 10000
-```Go
+```
 BenchmarkNearest-4          5000            210245 ns/op
 PASS
 ok      github.com/maddevsio/gocodelabru/step10/storage 9.951s

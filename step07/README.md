@@ -125,7 +125,7 @@ func (d *DriverStorage) Get(key int) (*Driver, error) {
 ```
 Но нужны еще также и тесты чтобы убедиться, что наш код работает.
 Для того, чтобы писать меньше кода, мы поставим пакет assert
-```Go
+```
 go get github.com/stretchr/testify/assert
 ```
 После этого напишем тест
