@@ -30,7 +30,11 @@ func nearestDrivers(c echo.Context) error {
 ```Go
 package main
 
-import "github.com/labstack/echo"
+import (
+	"log"
+
+	"github.com/labstack/echo"
+)
 
 func main() {
 	e := echo.New()
