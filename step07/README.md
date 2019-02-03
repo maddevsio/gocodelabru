@@ -102,7 +102,7 @@ func (d *DriverStorage) Set(key int, driver *Driver) {
 ```Go
 // Delete removes driver from storage by key
 func (d *DriverStorage) Delete(key int) error {
-	driver, ok := d.drivers[key]
+	_, ok := d.drivers[key]
 	if !ok {
 		return errors.New("Driver does not exist")
 	}
