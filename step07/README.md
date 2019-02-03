@@ -218,7 +218,7 @@ func TestNearest(t *testing.T) {
 			Lon: 74.588279,
 		},
 	})
-	drivers := s.Nearest(1000, 42.876420, 74.588332)
+	drivers, _ := s.Nearest(1000, 42.876420, 74.588332)
 	assert.Equal(t, len(drivers), 1)
 }
 ```
